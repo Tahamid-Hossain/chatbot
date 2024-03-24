@@ -61,7 +61,7 @@ def user_input(user_question, model):
     st.write("Reply: ", response["output_text"])
 
 def main():
-    st.set_page_config("My ChatBot 🤖")
+    st.set_page_config("TH ChatBot 🤖")
     st.title("🤖 Gemini - ChatBot 🤖")
 
     # Replace the selected = st.sidebar.selectbox(...) line with the following code:
