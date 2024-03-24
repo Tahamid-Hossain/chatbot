@@ -1,0 +1,9 @@
+pip install -r reuirements.txt
+
+ create .env file 
+
+ GOOGLE_API_KEY = "AIzaSyCHh2wEQm2abjohby35aLGs6ddxc8R7K4k"
+
+
+
+ rrun    streamlit run app.py
