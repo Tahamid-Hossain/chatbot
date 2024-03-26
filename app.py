@@ -1,4 +1,6 @@
 import os
+import textwrap
+from PIL import Image
 import streamlit as st
 from PyPDF2 import PdfReader
 from dotenv import load_dotenv
@@ -20,8 +22,8 @@ genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
 def set_page_config():
     st.set_page_config(
-        page_title="Our Bot",
-        page_icon="🖥️"
+        page_title="Gemini Bot",
+        page_icon="🐶"
     )
 
 def get_pdf_text(pdf_docs):
@@ -68,16 +70,25 @@ def user_input(user_question, model):
     response = chain({"input_documents": docs, "question": user_question}, return_only_outputs=True)
     st.write("Reply: ", response["output_text"])
 
+def get_gemini_response(input,image):
+    model = genai.GenerativeModel('gemini-pro-vision')
+    if input!="":
+       response = model.generate_content([input,image])
+    else:
+       response = model.generate_content(image)
+    return response.text
+
+
 def main():
     set_page_config()
-    st.title("🤖 Gemini - ChatBot 🤖")
+    st.title("🤖 Gemini Bot 🤖")
     st.caption("This bot is made by Tahamid's Group for Info Structure using gemini, streamlit, langchain")
 
  
     selected = option_menu(
     menu_title=None,  
-    options=["ChatBot", "PDF Bot"],
-    icons=["robot", "filetype-pdf"],
+    options=["ChatBot", "PDF Bot", "Vision Bot"],
+    icons=["robot", "filetype-pdf", "image"],
     orientation="horizontal"
 )
 
@@ -166,11 +177,13 @@ def main():
             # Output the HTML content to the Streamlit app
             st.markdown(html_content, unsafe_allow_html=True)
 
-
-    # with st.sidebar:
-    #     if st.button("Clear Conversation", use_container_width=True, type="primary"):
-    #             st.session_state.chat_session.history = []
-    #             st.rerun()
+    if selected == "Vision Bot":
+        input=st.text_input("Input Prompt: ",key="input")
+        uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
+        image=""   
+        if uploaded_file is not None:
+            image = Image.open(uploaded_file)
+            st.image(image, caption="Uploaded Image.", use_column_width=True)
 
 if __name__ == "__main__":
     main()

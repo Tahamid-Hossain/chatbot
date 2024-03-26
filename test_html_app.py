@@ -1,4 +1,6 @@
 import os
+import textwrap
+from PIL import Image
 import streamlit as st
 from PyPDF2 import PdfReader
 from dotenv import load_dotenv
@@ -20,7 +22,7 @@ genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
 def set_page_config():
     st.set_page_config(
-        page_title="VBot",
+        page_title="Gemini Bot",
         page_icon="🐶"
     )
 
@@ -68,27 +70,38 @@ def user_input(user_question, model):
     response = chain({"input_documents": docs, "question": user_question}, return_only_outputs=True)
     st.write("Reply: ", response["output_text"])
 
+def get_gemini_response(input,image):
+    model = genai.GenerativeModel('gemini-pro-vision')
+    if input!="":
+       response = model.generate_content([input,image])
+    else:
+       response = model.generate_content(image)
+    return response.text
+
+
+
+
 def main():
     set_page_config()
-    st.title("🤖 Gemini - ChatBot 🤖")
+    st.title("🤖 Gemini Bot 🤖")
     st.caption("This bot is made by Tahamid's Group for Info Structure using gemini, streamlit, langchain")
 
-    
-
-
-
+ 
     selected = option_menu(
     menu_title=None,  
-    options=["ChatBot", "PDF Bot"],
-    icons=["robot", "filetype-pdf"],
+    options=["ChatBot", "PDF Bot", "Vision Bot"],
+    icons=["robot", "filetype-pdf", "image"],
     orientation="horizontal"
-    )
+)
 
     if selected == "ChatBot":
         model = genai.GenerativeModel('gemini-pro')
         if "chat_session" not in st.session_state:
             st.session_state.chat_session = model.start_chat(history=[])
 
+        
+
+        
         col1, col2 = st.columns([5.4, 1])
         with col1:
             user_prompt = st.text_input("Ask any question...")
@@ -96,14 +109,19 @@ def main():
             if st.button("Clear Chat"):
                 st.session_state.chat_session.history = []
                 st.rerun()
-
-        
-
-        # Input prompt and send message
-        # user_prompt = st.text_input("Ask any question...")
-
         if user_prompt:
+            # Display user avatar and input text
+            # with st.container():
+            #     # st.image("😄", width=30)  # User avatar
+            #     st.write(user_prompt, avatar = "🥹")
+
+            # Send user message and display assistant response
             gemini_response = st.session_state.chat_session.send_message(user_prompt)
+
+            # Display assistant avatar and response text
+            # with st.container():
+            #     # st.image("🖥️", width=30)  # Assistant avatar
+            #     st.write(gemini_response.text, avatar = "💻")
 
 
         # Include the CSS for chat message styling
@@ -139,23 +157,36 @@ def main():
                     get_vector_store(text_chunks)
                     st.success("PDF Processing Complete")
 
-        user_question = st.text_input("Ask any question from the PDF Files")
+
+        col1, col2 = st.columns([5.4, 1])
+        with col1:
+            user_question = st.text_input("Ask any question from the PDF Files")
+        with col2:
+            if st.button("Clear Chat"):
+                st.session_state.chat_session.history = []
+                st.rerun()
+
+        # user_question = st.text_input("Ask any question from the PDF Files")
         if user_question:
             model = genai.GenerativeModel('gemini-pro')
             user_input(user_question, model)
+ 
+        # Display chat history with the respective templates for user and bot messages
+        for message in reversed(st.session_state.chat_session.history):
+            # Determine role and select the appropriate template in one line
+            html_content = (bot_template if message.role == "model" else user_template).replace("{{MSG}}", message.parts[0].text)
+            
+            # Output the HTML content to the Streamlit app
+            st.markdown(html_content, unsafe_allow_html=True)
 
-        # Display chat history with avatars
-        for message in st.session_state.chat_session.history:
-            role = "assistant" if message.role == "model" else message.role
-            avatar = "🖥️" if role == "assistant" else "😄"
-            with st.chat_message(role, avatar=avatar):
-                st.markdown(message.parts[0].text)
+    if selected == "Vision Bot":
+        input=st.text_input("Input Prompt: ",key="input")
+        uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
+        image=""   
+        if uploaded_file is not None:
+            image = Image.open(uploaded_file)
+            st.image(image, caption="Uploaded Image.", use_column_width=True)
 
-    # clear chat button
-    with st.sidebar:
-        if st.button("Clear Conversation", use_container_width=True, type="primary"):
-                st.session_state.chat_session.history = []
-                st.rerun()
 
 if __name__ == "__main__":
     main()
