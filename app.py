@@ -5,16 +5,24 @@ from dotenv import load_dotenv
 import google.generativeai as genai
 from langchain.vectorstores import FAISS
 from langchain.prompts import PromptTemplate
+from streamlit_option_menu import option_menu
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.chains.question_answering import load_qa_chain
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+from htmlTemplates import css, bot_template, user_template
+
+
 
 # Load the env file and set the api key for gemini
 load_dotenv()
-os.getenv("GOOGLE_API_KEY")
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
+def set_page_config():
+    st.set_page_config(
+        page_title="Our Bot",
+        page_icon="🖥️"
+    )
 
 def get_pdf_text(pdf_docs):
     text = ""
@@ -61,35 +69,17 @@ def user_input(user_question, model):
     st.write("Reply: ", response["output_text"])
 
 def main():
-    st.set_page_config("TH ChatBot 🤖")
+    set_page_config()
     st.title("🤖 Gemini - ChatBot 🤖")
+    st.caption("This bot is made by Tahamid's Group for Info Structure using gemini, streamlit, langchain")
 
-    # Replace the selected = st.sidebar.selectbox(...) line with the following code:
-
-    # Define the CSS animation for the rainbow glow
-    rainbow_glow_css = """
-    @keyframes rainbow-glow {
-    0% { box-shadow: 0 0 20px #ff0000; }
-    25% { box-shadow: 0 0 20px #ff7f00; }
-    50% { box-shadow: 0 0 20px #ffff00; }
-    75% { box-shadow: 0 0 20px #00ff00; }
-    100% { box-shadow: 0 0 20px #0000ff; }
-    }
-    """
-
-    # Add the CSS animation to the page
-    st.markdown(f"<style>{rainbow_glow_css}</style>", unsafe_allow_html=True)
-
-    # Replace the selected = st.sidebar.selectbox(...) line with the following code:
-
-    st.sidebar.markdown(
-        "<h2 style='text-align: center; background-color: #673F69; border-radius: 10px; padding: 10px; animation: rainbow-glow 2s infinite;'>Select Feature</h2>", 
-        unsafe_allow_html=True
-    )
-    selected = st.sidebar.selectbox(
-        "",
-        ["ChatBot", "PDF ChatBot"]
-    )
+ 
+    selected = option_menu(
+    menu_title=None,  
+    options=["ChatBot", "PDF Bot"],
+    icons=["robot", "filetype-pdf"],
+    orientation="horizontal"
+)
 
     if selected == "ChatBot":
         model = genai.GenerativeModel('gemini-pro')
@@ -98,22 +88,51 @@ def main():
 
         
 
-        for message in st.session_state.chat_session.history:
-            with st.chat_message("user" if message.role == "user" else "assistant"):
-                st.markdown(message.parts[0].text)
-
-        user_prompt = st.chat_input("Ask Gemini-Pro...")
+        
+        col1, col2 = st.columns([5.4, 1])
+        with col1:
+            user_prompt = st.text_input("Ask any question...")
+        with col2:
+            if st.button("Clear Chat"):
+                st.session_state.chat_session.history = []
+                st.rerun()
         if user_prompt:
-            st.chat_message("user").markdown(user_prompt)
+            # Display user avatar and input text
+            # with st.container():
+            #     # st.image("😄", width=30)  # User avatar
+            #     st.write(user_prompt, avatar = "🥹")
+
+            # Send user message and display assistant response
             gemini_response = st.session_state.chat_session.send_message(user_prompt)
 
-            with st.chat_message("assistant"):
-                st.markdown(gemini_response.text)
+            # Display assistant avatar and response text
+            # with st.container():
+            #     # st.image("🖥️", width=30)  # Assistant avatar
+            #     st.write(gemini_response.text, avatar = "💻")
 
-        
 
-    elif selected == "PDF ChatBot":
-        st.title("PDF ChatBot")
+        # Include the CSS for chat message styling
+        st.markdown(css, unsafe_allow_html=True)
+
+        # Display chat history with the respective templates for user and bot messages
+        for message in reversed(st.session_state.chat_session.history):
+            # Determine role and select the appropriate template in one line
+            html_content = (bot_template if message.role == "model" else user_template).replace("{{MSG}}", message.parts[0].text)
+            
+            # Output the HTML content to the Streamlit app
+            st.markdown(html_content, unsafe_allow_html=True)
+
+
+
+
+        # # Display chat history with avatars
+        # for message in reversed(st.session_state.chat_session.history):
+        #     role = "assistant" if message.role == "model" else message.role
+        #     avatar = "🖥️" if role == "assistant" else "😄"
+        #     with st.chat_message(role, avatar=avatar):
+        #         st.markdown(message.parts[0].text)
+                
+    if selected == "PDF Bot":
 
         pdf_docs = st.file_uploader("Upload your PDF files", accept_multiple_files=True)
 
@@ -125,10 +144,33 @@ def main():
                     get_vector_store(text_chunks)
                     st.success("PDF Processing Complete")
 
-        user_question = st.text_input("Ask any question from the PDF Files")
+
+        col1, col2 = st.columns([5.4, 1])
+        with col1:
+            user_question = st.text_input("Ask any question from the PDF Files")
+        with col2:
+            if st.button("Clear Chat"):
+                st.session_state.chat_session.history = []
+                st.rerun()
+
+        # user_question = st.text_input("Ask any question from the PDF Files")
         if user_question:
             model = genai.GenerativeModel('gemini-pro')
             user_input(user_question, model)
+ 
+        # Display chat history with the respective templates for user and bot messages
+        for message in reversed(st.session_state.chat_session.history):
+            # Determine role and select the appropriate template in one line
+            html_content = (bot_template if message.role == "model" else user_template).replace("{{MSG}}", message.parts[0].text)
+            
+            # Output the HTML content to the Streamlit app
+            st.markdown(html_content, unsafe_allow_html=True)
+
+
+    # with st.sidebar:
+    #     if st.button("Clear Conversation", use_container_width=True, type="primary"):
+    #             st.session_state.chat_session.history = []
+    #             st.rerun()
 
 if __name__ == "__main__":
     main()
