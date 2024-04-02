@@ -100,7 +100,7 @@ def convert_image_to_pil(st_image):
 
 def main():
     set_page_config()
-    st.title("🤖 Gemini Bot 🤖")
+    st.title("🤖 MultiModal Gemini Bot 🤖")
     st.caption("This bot is made by Tahamid's Group for Info Structure using gemini, streamlit, langchain")
 
  
