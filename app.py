@@ -68,8 +68,8 @@ def user_input(user_question, model):
     chain = get_conversational_chain()
     
     response = chain({"input_documents": docs, "question": user_question}, return_only_outputs=True)
-    
-    st.write("Reply: ", response["output_text"])
+    st.write("User 😄: ", user_question)
+    st.write("PDF Bot 🤖: ", response["output_text"])
 
 def get_gemini_response(input,image):
     model = genai.GenerativeModel('gemini-pro-vision')
