@@ -68,6 +68,7 @@ def user_input(user_question, model):
     chain = get_conversational_chain()
     
     response = chain({"input_documents": docs, "question": user_question}, return_only_outputs=True)
+    
     st.write("Reply: ", response["output_text"])
 
 def get_gemini_response(input,image):
@@ -120,7 +121,7 @@ def main():
         
         col1, col2 = st.columns([5.4, 1])
         with col1:
-            user_prompt = st.text_input("Ask any question...")
+            user_prompt = st.chat_input("Ask any question...")
         with col2:
             if st.button("Clear Chat"):
                 st.session_state.chat_session.history = []
@@ -163,7 +164,7 @@ def main():
                 
     if selected == "PDF Bot":
 
-        pdf_docs = st.file_uploader("Upload your PDF files", accept_multiple_files=True)
+        pdf_docs = st.file_uploader("Upload your PDF files & Click Process Button", accept_multiple_files=True)
 
         if st.button("Process PDF"):
             if pdf_docs:
@@ -176,7 +177,7 @@ def main():
 
         col1, col2 = st.columns([5.4, 1])
         with col1:
-            user_question = st.text_input("Ask any question from the PDF Files")
+            user_question = st.chat_input("Ask any question from the PDF Files")
         with col2:
             if st.button("Clear Chat"):
                 st.session_state.chat_session.history = []
@@ -186,14 +187,7 @@ def main():
         if user_question:
             model = genai.GenerativeModel('gemini-pro')
             user_input(user_question, model)
- 
-        # Display chat history with the respective templates for user and bot messages
-        for message in reversed(st.session_state.chat_session.history):
-            # Determine role and select the appropriate template in one line
-            html_content = (bot_template if message.role == "model" else user_template).replace("{{MSG}}", message.parts[0].text)
-            
-            # Output the HTML content to the Streamlit app
-            st.markdown(html_content, unsafe_allow_html=True)
+
 
     if selected == "Vision Bot":
         img = st.file_uploader("Upload an image", type=['png', 'jpg', 'jpeg','gif'])
@@ -201,7 +195,7 @@ def main():
         if img:
             st.image(img, caption='Chat with this image')
 
-            prompt = st.text_area('Ask a question about your image:')
+            prompt = st.chat_input('Ask a question about your image:')
 
             if prompt:
                 pil_image = convert_image_to_pil(img)
