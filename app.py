@@ -1,4 +1,6 @@
 import os
+import requests
+from io import BytesIO
 import textwrap
 from PIL import Image
 import streamlit as st
@@ -43,6 +45,12 @@ def get_vector_store(text_chunks):
     embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
     vector_store = FAISS.from_texts(text_chunks, embedding=embeddings)
     vector_store.save_local("faiss_index")
+
+
+def take_pdf_url(pdf_url):
+    response = requests.get(pdf_url)
+    pdf_file = BytesIO(response.content)
+    return pdf_file
 
 def get_conversational_chain():
     prompt_template = """
@@ -127,44 +135,34 @@ def main():
                 st.session_state.chat_session.history = []
                 st.rerun()
         if user_prompt:
-            # Display user avatar and input text
-            # with st.container():
-            #     # st.image("😄", width=30)  # User avatar
-            #     st.write(user_prompt, avatar = "🥹")
 
-            # Send user message and display assistant response
             gemini_response = st.session_state.chat_session.send_message(user_prompt)
 
-            # Display assistant avatar and response text
-            # with st.container():
-            #     # st.image("🖥️", width=30)  # Assistant avatar
-            #     st.write(gemini_response.text, avatar = "💻")
 
 
-        # Include the CSS for chat message styling
         st.markdown(css, unsafe_allow_html=True)
 
-        # Display chat history with the respective templates for user and bot messages
+
         for message in reversed(st.session_state.chat_session.history):
-            # Determine role and select the appropriate template in one line
+
             html_content = (bot_template if message.role == "model" else user_template).replace("{{MSG}}", message.parts[0].text)
             
-            # Output the HTML content to the Streamlit app
+
             st.markdown(html_content, unsafe_allow_html=True)
 
 
 
 
-        # # Display chat history with avatars
-        # for message in reversed(st.session_state.chat_session.history):
-        #     role = "assistant" if message.role == "model" else message.role
-        #     avatar = "🖥️" if role == "assistant" else "😄"
-        #     with st.chat_message(role, avatar=avatar):
-        #         st.markdown(message.parts[0].text)
                 
     if selected == "PDF Bot":
+        
 
         pdf_docs = st.file_uploader("Upload your PDF files & Click Process Button", accept_multiple_files=True)
+        pdf_url = st.text_input("Else enter pdf url")
+
+        if pdf_url:
+            pdf_file = get_pdf_text(pdf_url)
+            rawText = get_pdf_text(pdf_file)
 
         if st.button("Process PDF"):
             if pdf_docs:
@@ -183,7 +181,7 @@ def main():
                 st.session_state.chat_session.history = []
                 st.rerun()
 
-        # user_question = st.text_input("Ask any question from the PDF Files")
+
         if user_question:
             model = genai.GenerativeModel('gemini-pro')
             user_input(user_question, model)
@@ -211,8 +209,7 @@ def main():
                 value = f'**Question**: {prompt}: \n\n **Answer**: {answer}'
                 st.session_state.history = f'{value} \n\n {"-" * 100} \n\n {st.session_state.history}'
 
-                # h = st.session_state.history
-                # st.text_area(label='Chat History:', value=h, height=800, key='history')
+
 
 if __name__ == "__main__":
     main()
